@@ -135,14 +135,22 @@ const updateOrderStatus = async (req, res) => {
     throw new AppError(`An order that is ${order.status} cannot become ${status}`, 400);
   }
 
-  order.status = status;
-  await order.save();
-
-  if (status === 'cancelled') {
-    await releaseStock(order.items);
+  // Only update if the status hasn't changed since we read it, so two
+  // cancel clicks at once can't put the stock back twice.
+  const updated = await Order.findOneAndUpdate(
+    { _id: order._id, status: order.status },
+    { status },
+    { returnDocument: 'after' }
+  );
+  if (!updated) {
+    throw new AppError('This order was just updated, please refresh', 409);
   }
 
-  res.status(200).json({ message: `Order ${status}`, order });
+  if (status === 'cancelled') {
+    await releaseStock(updated.items);
+  }
+
+  res.status(200).json({ message: `Order ${status}`, order: updated });
 };
 
 module.exports = { createOrder, getMyOrders, getSellerOrders, updateOrderStatus };
