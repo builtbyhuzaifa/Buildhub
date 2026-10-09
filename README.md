@@ -8,6 +8,12 @@ A full-stack **MERN** marketplace where buyers order construction and interior m
 ![Node](https://img.shields.io/badge/Node.js-339933?logo=nodedotjs&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
+## Screenshots
+
+| Home | Product listing | Seller dashboard |
+|---|---|---|
+| ![Buildhub home page](docs/screenshots/home.png) | ![Product listing with filters](docs/screenshots/products.png) | ![Seller dashboard](docs/screenshots/seller-dashboard.png) |
+
 ## Features
 
 **Buyers**
