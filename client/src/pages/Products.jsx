@@ -13,34 +13,41 @@ const SORT_OPTIONS = [
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [categories, setCategories] = useState([])
-  const [result, setResult] = useState({ products: [], pagination: null })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  // `key` records which query the result belongs to, so loading is derived
+  // instead of being set inside the effect.
+  const [result, setResult] = useState({ key: null, products: [], pagination: null, error: '' })
   const [search, setSearch] = useState(searchParams.get('search') || '')
 
   const filters = Object.fromEntries(searchParams.entries())
   const queryKey = searchParams.toString()
+  const loading = result.key !== queryKey
+  const error = result.error
 
   useEffect(() => {
     api('/categories').then((d) => setCategories(d.categories)).catch(() => {})
   }, [])
 
   useEffect(() => {
-    setLoading(true)
-    setError('')
+    let ignore = false
     api('/products', { params: { limit: 12, ...Object.fromEntries(new URLSearchParams(queryKey)) } })
-      .then(setResult)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
+      .then((data) => {
+        if (!ignore) setResult({ key: queryKey, ...data, error: '' })
+      })
+      .catch((err) => {
+        if (!ignore) setResult({ key: queryKey, products: [], pagination: null, error: err.message })
+      })
+    return () => { ignore = true }
   }, [queryKey])
 
   // Changing any filter sends the user back to page 1.
   const setFilter = (key, value) => {
-    const next = new URLSearchParams(searchParams)
-    if (value) next.set(key, value)
-    else next.delete(key)
-    if (key !== 'page') next.delete('page')
-    setSearchParams(next)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (value) next.set(key, value)
+      else next.delete(key)
+      if (key !== 'page') next.delete('page')
+      return next
+    })
   }
 
   const handleSearch = (e) => {
@@ -122,7 +129,7 @@ export default function Products() {
         </div>
 
         {pagination && (
-          <p className="muted small">{pagination.totalProducts} products found</p>
+          <p className="muted small">{pagination.totalProducts} {pagination.totalProducts === 1 ? 'product' : 'products'} found</p>
         )}
         {error && <p className="alert">{error}</p>}
 
